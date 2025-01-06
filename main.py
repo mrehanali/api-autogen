@@ -47,56 +47,66 @@ def get_single_response(description: str) -> Dict[str, Any]:
     assistant = autogen.AssistantAgent(
         name="developer",
         system_message="""You are a skilled React developer who generates complete React applications.
-Your response must be ONLY a JSON object containing the following files with their complete content.
-You MUST implement all the features requested by the user in the description.
+Your response must be ONLY a JSON object containing ALL the necessary files with their complete content.
+You MUST implement all the features requested by the user in the description using a proper project structure.
 
+Required base structure (extend based on requirements):
 {
-    "package.json": "content of package.json",
-    "tsconfig.json": "content of tsconfig.json",
-    "vite.config.ts": "content of vite.config.ts",
-    "index.html": "content of index.html",
-    "src/main.tsx": "content of main.tsx",
-    "src/App.tsx": "content of App.tsx"
+    "package.json": "dependencies and scripts",
+    "tsconfig.json": "TypeScript configuration",
+    "vite.config.ts": "Vite configuration",
+    "index.html": "HTML template",
+    "src/main.tsx": "Application entry point",
+    "src/App.tsx": "Root component"
 }
 
-Requirements for each file:
-1. package.json: 
-   - Include React 18, TypeScript, Vite
-   - Add ALL necessary dependencies for the requested features (form handling, validation, UI components)
-   - Include exact versions
+Directory organization guidelines:
 
-2. tsconfig.json: 
-   - Proper TypeScript configuration for React and Vite
-   - Enable strict type checking
+1. src/pages/: 
+   - Page components based on requirements
+   - Use proper routing if needed
+   - Include error boundaries
 
-3. vite.config.ts: 
-   - Basic Vite configuration with React plugin
-   - Any additional plugins needed for the requested features
+2. src/components/:
+   - Only create components needed for the requirements
+   - Organize by feature or common/shared
+   - TypeScript props interfaces
+   - Styled components or CSS modules
 
-4. index.html: 
-   - Include proper meta tags and root div
-   - Add any required CDN links or meta tags
+3. src/styles/:
+   - Only create necessary style files
+   - Consistent styling system
+   - Responsive design utilities
 
-5. src/main.tsx: 
-   - React 18 entry point with proper imports
-   - Include any global providers or context needed
+4. src/hooks/:
+   - Custom hooks based on requirements
+   - Form handling if needed
+   - Data fetching if needed
 
-6. src/App.tsx: 
-   - Implement ALL the features requested in the user's description
-   - Include proper TypeScript types and interfaces
-   - Add form validation and error handling
-   - Implement all required event handlers
-   - Add loading states and success messages
-   - Include proper styling and layout
-   - Add helpful comments explaining the code
+5. src/utils/:
+   - Only create utilities needed for the requirements
+   - Validation utilities if needed
+   - Type guards if needed
+
+6. src/types/:
+   - TypeScript interfaces for the requirements
+   - Type definitions as needed
+
+7. src/services/:
+   - API integration if needed
+   - External services if required
+   - Error handling
+
+8. src/context/:
+   - Context providers only if state management is needed
 
 Technical requirements:
-- Use TypeScript with proper types and interfaces
+- Use TypeScript with strict type checking
 - Follow React best practices and hooks
-- Implement proper form validation and error handling
-- Add loading states and success messages
+- Implement proper error handling
 - Include proper styling and responsive design
 - Production-ready code with error boundaries
+- Proper file organization
 
 DO NOT include any explanations or additional text. ONLY the JSON object with the files.""",
         llm_config=llm_config
@@ -114,27 +124,37 @@ DO NOT include any explanations or additional text. ONLY the JSON object with th
         assistant,
         message=f"""Create a complete React application that implements: {description}
 
-RESPOND WITH ONLY A JSON OBJECT containing these files:
-- package.json (include ALL necessary dependencies for the requested features)
-- tsconfig.json (proper TypeScript config)
-- vite.config.ts (Vite config with needed plugins)
-- index.html (with required meta tags)
-- src/main.tsx (React 18 entry with required providers)
-- src/App.tsx (implement ALL requested features with proper validation and error handling)
+RESPOND WITH ONLY A JSON OBJECT containing all necessary files and directories.
 
-The App.tsx MUST include:
-- Complete implementation of all requested features
-- Proper form validation and error handling
-- Loading states and success messages
-- TypeScript types and interfaces
-- Proper styling and layout
-- Event handlers for all interactions
-- Helpful comments explaining the code
+Base files needed:
+- package.json (include necessary dependencies)
+- tsconfig.json (TypeScript config)
+- vite.config.ts (Vite config)
+- index.html (template)
+- src/main.tsx (entry point)
+- src/App.tsx (root component)
+
+Then, based on the requirements, create and organize additional files under:
+- src/pages/
+- src/components/
+- src/styles/
+- src/hooks/
+- src/utils/
+- src/types/
+- src/services/
+- src/context/
+
+Each component MUST include:
+- TypeScript interfaces
+- Proper styling
+- Error handling
+- Loading states where needed
+- Comments
 
 Format:
 {{
     "package.json": "content",
-    "tsconfig.json": "content",
+    "path/to/your/file.tsx": "content",
     ...
 }}
 
@@ -175,20 +195,10 @@ async def generate_code_workflow(description: str) -> AsyncGenerator[Dict[Any, s
                 current_time = datetime.now(timezone.utc).isoformat()
                 yield f": ping - {current_time}\n\n"
                 
-                # Stream each file
-                required_files = [
-                    "package.json",
-                    "tsconfig.json",
-                    "vite.config.ts",
-                    "index.html",
-                    "src/main.tsx",
-                    "src/App.tsx"
-                ]
-                
-                for file_path in required_files:
-                    if file_path in files_content:
-                        yield f"data: {json.dumps({'code': files_content[file_path], 'file': file_path})}\n\n"
-                        await asyncio.sleep(0.1)
+                # Stream all generated files
+                for file_path, file_content in files_content.items():
+                    yield f"data: {json.dumps({'code': file_content, 'file': file_path})}\n\n"
+                    await asyncio.sleep(0.1)
                 
                 # Completion message
                 yield f"data: {json.dumps({'code': 'Code generation complete!', 'file': 'status.log'})}\n\n"
