@@ -44,11 +44,12 @@ llm_config = {
 
 def get_single_response(description: str) -> Dict[str, Any]:
     # Create agents
-    assistant = autogen.AssistantAgent(
+    developer = autogen.AssistantAgent(
         name="developer",
         system_message="""You are a skilled React developer who generates complete React applications.
 Your response must be ONLY a JSON object containing ALL the necessary files with their complete content.
 You MUST implement all the features requested by the user in the description using a proper project structure.
+Focus on functionality and structure, the designer agent will enhance the styling later.
 
 Required base structure (extend based on requirements):
 {
@@ -61,54 +62,53 @@ Required base structure (extend based on requirements):
 }
 
 Directory organization guidelines:
-
-1. src/pages/: 
-   - Page components based on requirements
-   - Use proper routing if needed
-   - Include error boundaries
-
-2. src/components/:
-   - Only create components needed for the requirements
-   - Organize by feature or common/shared
-   - TypeScript props interfaces
-   - Styled components or CSS modules
-
-3. src/styles/:
-   - Only create necessary style files
-   - Consistent styling system
-   - Responsive design utilities
-
-4. src/hooks/:
-   - Custom hooks based on requirements
-   - Form handling if needed
-   - Data fetching if needed
-
-5. src/utils/:
-   - Only create utilities needed for the requirements
-   - Validation utilities if needed
-   - Type guards if needed
-
-6. src/types/:
-   - TypeScript interfaces for the requirements
-   - Type definitions as needed
-
-7. src/services/:
-   - API integration if needed
-   - External services if required
-   - Error handling
-
-8. src/context/:
-   - Context providers only if state management is needed
+1. src/pages/: Page components based on requirements
+2. src/components/: Only create components needed for the requirements
+3. src/styles/: Basic styling structure
+4. src/hooks/: Custom hooks based on requirements
+5. src/utils/: Only create utilities needed for the requirements
+6. src/types/: TypeScript interfaces for the requirements
+7. src/services/: API integration if needed
+8. src/context/: Context providers only if state management is needed
 
 Technical requirements:
 - Use TypeScript with strict type checking
 - Follow React best practices and hooks
 - Implement proper error handling
-- Include proper styling and responsive design
 - Production-ready code with error boundaries
 - Proper file organization
 
-DO NOT include any explanations or additional text. ONLY the JSON object with the files.""",
+DO NOT focus too much on styling as the designer agent will enhance it later.""",
+        llm_config=llm_config
+    )
+
+    designer = autogen.AssistantAgent(
+        name="designer",
+        system_message="""You are a skilled UI/UX designer who enhances React components with beautiful, modern styling.
+You will receive a JSON object containing React files and enhance their styling while maintaining functionality.
+
+Focus on:
+1. Modern, clean design
+2. Responsive layouts
+3. Proper spacing and typography
+4. Color schemes and visual hierarchy
+5. Micro-interactions and hover states
+6. Loading states and transitions
+7. Error state styling
+8. Accessibility considerations
+
+Guidelines:
+- Use CSS-in-JS or CSS modules for styling
+- Implement responsive design patterns
+- Add subtle animations and transitions
+- Ensure consistent spacing and alignment
+- Use modern color schemes
+- Add hover and active states
+- Style form elements professionally
+- Include loading and error states
+- Make components visually appealing
+
+Your response must be ONLY a JSON object with the enhanced files.""",
         llm_config=llm_config
     )
 
@@ -119,9 +119,9 @@ DO NOT include any explanations or additional text. ONLY the JSON object with th
         max_consecutive_auto_reply=0
     )
     
-    # Create the chat
+    # First, get the developer to create the base application
     chat_response = user_proxy.initiate_chat(
-        assistant,
+        developer,
         message=f"""Create a complete React application that implements: {description}
 
 RESPOND WITH ONLY A JSON OBJECT containing all necessary files and directories.
@@ -146,7 +146,7 @@ Then, based on the requirements, create and organize additional files under:
 
 Each component MUST include:
 - TypeScript interfaces
-- Proper styling
+- Basic styling structure
 - Error handling
 - Loading states where needed
 - Comments
@@ -162,14 +162,43 @@ NO additional text or explanations.""",
         clear_history=True
     )
     
-    # Get the last message from the assistant
-    messages = chat_response.chat_history
-    if messages and len(messages) >= 2:
-        last_message = messages[-1]
+    # Get the developer's response
+    dev_messages = chat_response.chat_history
+    if not (dev_messages and len(dev_messages) >= 2 and isinstance(dev_messages[-1], dict) and "content" in dev_messages[-1]):
+        return {"content": None}
+    
+    dev_content = dev_messages[-1]["content"]
+    
+    # Now, have the designer enhance the styling
+    chat_response = user_proxy.initiate_chat(
+        designer,
+        message=f"""Enhance the styling of these React components while maintaining their functionality: 
+
+{dev_content}
+
+Focus on:
+1. Modern, clean design
+2. Responsive layouts
+3. Proper spacing and typography
+4. Color schemes
+5. Hover states and transitions
+6. Loading and error states
+7. Visual hierarchy
+8. Accessibility
+
+RESPOND WITH ONLY THE ENHANCED JSON OBJECT.
+NO additional text or explanations.""",
+        clear_history=True
+    )
+    
+    # Get the designer's response
+    design_messages = chat_response.chat_history
+    if design_messages and len(design_messages) >= 2:
+        last_message = design_messages[-1]
         if isinstance(last_message, dict) and "content" in last_message:
             return {"content": last_message["content"]}
     
-    return {"content": None}
+    return {"content": dev_content}  # Fallback to developer's content if designer fails
 
 async def generate_code_workflow(description: str) -> AsyncGenerator[Dict[Any, str], None]:
     try:
