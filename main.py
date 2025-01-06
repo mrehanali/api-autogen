@@ -47,7 +47,8 @@ def get_single_response(description: str) -> Dict[str, Any]:
     assistant = autogen.AssistantAgent(
         name="developer",
         system_message="""You are a skilled React developer who generates complete React applications.
-Your response must be ONLY a JSON object containing the following files with their complete content:
+Your response must be ONLY a JSON object containing the following files with their complete content.
+You MUST implement all the features requested by the user in the description.
 
 {
     "package.json": "content of package.json",
@@ -59,18 +60,43 @@ Your response must be ONLY a JSON object containing the following files with the
 }
 
 Requirements for each file:
-1. package.json: Include React 18, TypeScript, Vite, and all necessary dependencies with exact versions
-2. tsconfig.json: Proper TypeScript configuration for React and Vite
-3. vite.config.ts: Basic Vite configuration with React plugin
-4. index.html: Include proper meta tags and root div
-5. src/main.tsx: React 18 entry point with proper imports
-6. src/App.tsx: Main component implementing the requested functionality
+1. package.json: 
+   - Include React 18, TypeScript, Vite
+   - Add ALL necessary dependencies for the requested features (form handling, validation, UI components)
+   - Include exact versions
+
+2. tsconfig.json: 
+   - Proper TypeScript configuration for React and Vite
+   - Enable strict type checking
+
+3. vite.config.ts: 
+   - Basic Vite configuration with React plugin
+   - Any additional plugins needed for the requested features
+
+4. index.html: 
+   - Include proper meta tags and root div
+   - Add any required CDN links or meta tags
+
+5. src/main.tsx: 
+   - React 18 entry point with proper imports
+   - Include any global providers or context needed
+
+6. src/App.tsx: 
+   - Implement ALL the features requested in the user's description
+   - Include proper TypeScript types and interfaces
+   - Add form validation and error handling
+   - Implement all required event handlers
+   - Add loading states and success messages
+   - Include proper styling and layout
+   - Add helpful comments explaining the code
 
 Technical requirements:
-- Use TypeScript for type safety
-- Follow React best practices
-- Production-ready code
-- Proper error handling
+- Use TypeScript with proper types and interfaces
+- Follow React best practices and hooks
+- Implement proper form validation and error handling
+- Add loading states and success messages
+- Include proper styling and responsive design
+- Production-ready code with error boundaries
 
 DO NOT include any explanations or additional text. ONLY the JSON object with the files.""",
         llm_config=llm_config
@@ -86,15 +112,24 @@ DO NOT include any explanations or additional text. ONLY the JSON object with th
     # Create the chat
     chat_response = user_proxy.initiate_chat(
         assistant,
-        message=f"""Create a React application for: {description}
+        message=f"""Create a complete React application that implements: {description}
 
 RESPOND WITH ONLY A JSON OBJECT containing these files:
-- package.json
-- tsconfig.json
-- vite.config.ts
-- index.html
-- src/main.tsx
-- src/App.tsx
+- package.json (include ALL necessary dependencies for the requested features)
+- tsconfig.json (proper TypeScript config)
+- vite.config.ts (Vite config with needed plugins)
+- index.html (with required meta tags)
+- src/main.tsx (React 18 entry with required providers)
+- src/App.tsx (implement ALL requested features with proper validation and error handling)
+
+The App.tsx MUST include:
+- Complete implementation of all requested features
+- Proper form validation and error handling
+- Loading states and success messages
+- TypeScript types and interfaces
+- Proper styling and layout
+- Event handlers for all interactions
+- Helpful comments explaining the code
 
 Format:
 {{
