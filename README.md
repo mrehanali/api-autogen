@@ -1,12 +1,12 @@
 # AI-Powered Front-end Generator
 
-This is a FastAPI-based backend service that transforms natural language descriptions into React-based front-end code using AutoGen with streaming response. It implements a two-agent workflow for development and review.
+This is a FastAPI-based backend service that transforms natural language descriptions into React-based front-end code using AutoGen with streaming response. It implements a two-agent workflow for development and design.
 
 ## Features
 
 - Single REST API endpoint accepting natural language UI descriptions
 - Streaming response for real-time code generation feedback
-- Two-agent workflow with Developer and Reviewer agents
+- Two-agent workflow with Developer and Designer agents
 - React components with Tailwind CSS generation
 - Basic responsive design implementation
 
